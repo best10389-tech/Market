@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Smart Market Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1220;--card:#141d2e;--card2:#1b2740;--ink:#f1f5fb;--mute:#9fb0c7;--line:#26344f;
+--up:#3ddc84;--upbg:#12382a;--down:#ff6b64;--downbg:#40201f;--flat:#f3c969;--flatbg:#3a3220}
+*{box-sizing:border-box}
+html{font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-size:17px}
+body{margin:0;background:radial-gradient(900px 400px at 50% -100px,#1a2c52,var(--bg));color:var(--ink);
+padding:max(18px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));max-width:560px;margin-inline:auto;min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:1.25rem;margin:0}
+.pill{font-size:.9rem;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
+.pill.open{color:var(--up)}.pill.closed{color:var(--mute)}
+.hello{color:var(--mute);margin:14px 0 12px}
+.hero{border-radius:22px;padding:22px 20px;margin-bottom:16px;border:1px solid var(--line);background:var(--card)}
+.hero.up{background:linear-gradient(160deg,#154631,var(--card))}
+.hero.down{background:linear-gradient(160deg,#4a2220,var(--card))}
+.hero.flat{background:linear-gradient(160deg,#41381f,var(--card))}
+.hero .big{font-size:1.9rem;font-weight:700;line-height:1.15}
+.hero .why{margin-top:8px;color:var(--mute);font-size:1.05rem;line-height:1.4}
+h2{font-size:1.1rem;margin:22px 0 10px}
+.idx{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:12px}
+.idx .head{display:flex;justify-content:space-between;align-items:center}
+.name{font-weight:700;font-size:1.1rem}
+.desc{color:var(--mute);font-size:.9rem}
+.tag{font-size:.9rem;font-weight:700;padding:5px 12px;border-radius:999px}
+.up .tag{background:var(--upbg);color:var(--up)}.down .tag{background:var(--downbg);color:var(--down)}.flat .tag{background:var(--flatbg);color:var(--flat)}
+.mid{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;gap:10px}
+.pct{font-size:2rem;font-weight:700;line-height:1}
+.up .pct{color:var(--up)}.down .pct{color:var(--down)}.flat .pct{color:var(--flat)}
+.price{color:var(--mute);margin-top:4px}
+svg{width:42%;height:44px}
+a.chart{display:inline-block;margin-top:10px;color:var(--mute);font-size:.95rem;text-decoration:underline}
+.stk{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.stk:first-child{border-top:0}
+.stk .n{font-weight:700}.stk .p{color:var(--mute);font-size:.9rem}
+.stk .c{font-weight:700;font-size:1.1rem}
+.stk.up .c{color:var(--up)}.stk.down .c{color:var(--down)}.stk.flat .c{color:var(--flat)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 18px}
+.note{border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#3a3220;color:#f6dc9a;display:none;line-height:1.4}
+.note.err{background:#40201f;color:#ffb4af}
+details{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 18px;margin-top:14px}
+summary{font-weight:700;cursor:pointer;min-height:28px}
+details p{color:var(--mute);line-height:1.5;margin:10px 0 0}
+button{font:inherit;font-weight:700;width:100%;margin-top:16px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--ink);min-height:50px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--up);outline-offset:2px}
+.foot{color:var(--mute);font-size:.88rem;line-height:1.5;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="top"><h1>📈 Smart Market Assistant</h1><span class="pill" id="session">…</span></div>
+<p class="hello" id="hello"></p>
+<div class="note" id="note"></div>
+<div class="hero flat" id="hero"><div class="big">Loading market…</div></div>
+<a href="weekly.html" style="display:block;text-align:center;font-weight:700;padding:14px;border-radius:14px;background:var(--card2);border:1px solid var(--line);color:var(--ink);text-decoration:none;margin-bottom:6px">📊 Open weekly dashboard (all shares)</a>
+<h2>Main indices</h2>
+<div id="list"></div>
+<div id="stocksWrap" style="display:none"><h2>My stocks</h2><div class="box" id="stocks"></div></div>
+<details><summary>What do these mean?</summary>
+<p><b>Nifty 50</b> tracks the 50 biggest companies on the NSE. <b>Sensex</b> tracks 30 big companies on the BSE. <b>Bank Nifty</b> tracks the main banks. If they go up, the market is generally doing well. If they go down, it is generally weak.</p>
+<p>A move of about 1% in a day is normal. A move of 1.5% or more is a big day.</p></details>
+<button id="refresh">Refresh now</button>
+<p class="foot" id="foot"></p>
+<script>
+const NAME="Dr. Vishal"; // change this to the name or title you want in the greeting
+const INFO={"Nifty 50":["Top 50 companies","https://www.tradingview.com/chart/?symbol=NSE%3ANIFTY"],
+"Sensex":["Top 30 companies","https://www.tradingview.com/chart/?symbol=BSE%3ASENSEX"],
+"Bank Nifty":["Main banks","https://www.tradingview.com/chart/?symbol=NSE%3ABANKNIFTY"]};
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
+const state=p=>p>=0.15?"up":p<=-0.15?"down":"flat";
+const word=(s,p)=>s==="flat"?"Steady":s==="up"?(p>=1.5?"High":"Up"):(p<=-1.5?"Low":"Down");
+function ist(){const d=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Kolkata"}));return d}
+function session(){const d=ist(),day=d.getDay(),m=d.getHours()*60+d.getMinutes();
+ const wk=day>0&&day<6;
+ if(wk&&m>=555&&m<930)return{open:true,t:"Market open"};
+ if(wk&&m<555)return{open:false,t:"Opens 9:15 AM"};
+ return{open:false,t:"Market closed"}}
+function spark(h,s){if(!h||h.length<2)return"";const mn=Math.min(...h),mx=Math.max(...h),r=mx-mn||1;
+ const pts=h.map((v,i)=>`${i/(h.length-1)*100},${40-((v-mn)/r)*36}`).join(" ");
+ const c=s==="up"?"var(--up)":s==="down"?"var(--down)":"var(--flat)";
+ return`<svg viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`}
+function note(t,err){const n=$("note");n.style.display=t?"block":"none";n.textContent=t||"";n.className="note"+(err?" err":"")}
+function render(d){
+ const ss=session();
+ $("session").textContent=ss.t;$("session").className="pill "+(ss.open?"open":"closed");
+ const hr=ist().getHours();
+ $("hello").textContent=(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+", "+NAME+". Here is the market in one look.";
+ let tot=0;$("list").innerHTML="";
+ d.indices.forEach(x=>{const p=(x.price-x.prev)/x.prev*100,s=state(p);tot+=p;const info=INFO[x.name]||["",""];
+  $("list").insertAdjacentHTML("beforeend",`<section class="idx ${s}"><div class="head"><div><div class="name">${x.name}</div><div class="desc">${info[0]}</div></div><span class="tag">${word(s,p)}</span></div>
+  <div class="mid"><div><div class="pct">${p>=0?"▲ +":"▼ "}${p.toFixed(2)}%</div><div class="price">Now ${fmt(x.price)}</div></div>${spark(x.history,s)}</div>
+  ${info[1]?`<a class="chart" href="${info[1]}" target="_blank" rel="noopener">Open full chart</a>`:""}</section>`)});
+ const avg=tot/d.indices.length,s=state(avg),a=Math.abs(avg).toFixed(1);
+ const day=ss.open?"today":"at the last close";
+ $("hero").className="hero "+s;
+ $("hero").innerHTML=s==="up"?`<div class="big">${avg>=1.5?"Market is high":"Market is up"} ${day}</div><div class="why">Main indices are about ${a}% higher. Nothing needs your attention.</div>`
+  :s==="down"?`<div class="big">${avg<=-1.5?"Market is low":"Market is down"} ${day}</div><div class="why">Main indices are about ${a}% lower. Daily dips are normal, so no need to panic.</div>`
+  :`<div class="big">Market is steady ${day}</div><div class="why">Very little change. A quiet day.</div>`;
+ const st=d.stocks||[];$("stocksWrap").style.display=st.length?"block":"none";
+ $("stocks").innerHTML=st.map(x=>{const p=(x.price-x.prev)/x.prev*100,s=state(p);
+  return`<div class="stk ${s}"><div><div class="n">${x.name}</div><div class="p">₹${fmt(x.price)}</div></div><div class="c">${p>=0?"+":""}${p.toFixed(2)}%</div></div>`}).join("");
+ const t=new Date(d.updated),age=(Date.now()-t)/60000;
+ $("foot").textContent="Last updated "+t.toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})+" IST. Prices can be delayed. Information only, not financial advice.";
+ note(ss.open&&age>45?"Prices look old (updated "+Math.round(age)+" minutes ago). The data feed may be delayed.":"",false);
+}
+async function load(){
+ try{const r=await fetch("data.json?t="+Date.now());if(!r.ok)throw new Error(r.status);render(await r.json())}
+ catch(e){
+  const local=location.protocol==="file:"||location.protocol==="content:";
+  $("hero").className="hero flat";
+  $("hero").innerHTML=`<div class="big">Waiting for first update</div><div class="why">${local?"This page was opened from the phone's files, so it cannot load prices. Open the online link instead.":"No prices yet. Run the update once (see README step 4), then refresh."}</div>`;
+  $("list").innerHTML="";$("hello").textContent="";const ss=session();$("session").textContent=ss.t;
+ }}
+$("refresh").onclick=load;load();setInterval(load,120000);
+</script>
+</body>
+</html>

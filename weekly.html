@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220"><title>Weekly Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1220;--card:#141d2e;--card2:#1b2740;--ink:#f1f5fb;--mute:#9fb0c7;--line:#26344f;--up:#3ddc84;--upbg:#12382a;--down:#ff6b64;--downbg:#40201f;--flat:#f3c969}
+*{box-sizing:border-box}html{font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-size:17px}
+body{margin:0;background:radial-gradient(900px 400px at 50% -100px,#1a2c52,var(--bg));color:var(--ink);padding:max(16px,env(safe-area-inset-top)) 14px max(28px,env(safe-area-inset-bottom));max-width:620px;margin-inline:auto;min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:center}h1{font-size:1.2rem;margin:0}
+a{color:var(--mute)}.sub{color:var(--mute);font-size:.9rem;margin:6px 0 12px}
+.ix{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.chip{flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.chip b{display:block;font-size:.85rem;color:var(--mute);font-weight:400}.chip span{font-weight:700;font-size:1.15rem}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}
+input,select{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-height:48px}
+.tools{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin:10px 0}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px}
+.f{flex:0 0 auto;font:inherit;font-weight:700;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mute);min-height:42px}
+.f.on{background:var(--card2);color:var(--ink);border-color:var(--mute)}
+.row{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;min-height:44px}
+.sym{font-weight:700;font-size:1.1rem}.px{color:var(--mute);font-size:.9rem}
+.badge{font-weight:700;padding:5px 12px;border-radius:999px;font-size:1rem}
+.badge.up{background:var(--upbg)}.badge.down{background:var(--downbg)}.badge.flat{background:#3a3220}
+.ohlc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;text-align:center}
+.ohlc div{background:var(--card2);border-radius:10px;padding:6px 2px}.ohlc small{display:block;color:var(--mute);font-size:.75rem}.ohlc b{font-size:.95rem}
+.more{display:none;margin-top:12px}.row.open .more{display:block}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.tag{font-size:.85rem;background:var(--card2);border-radius:999px;padding:4px 10px;color:var(--mute)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}th,td{padding:5px 3px;text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:400}
+tr+tr td{border-top:1px solid var(--line)}
+svg{width:100%;height:74px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{font:inherit;font-weight:700;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--ink);text-decoration:none;min-height:44px}
+.empty{text-align:center;color:var(--mute);padding:30px 10px;line-height:1.5}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--up);outline-offset:2px}
+.foot{color:var(--mute);font-size:.85rem;text-align:center;margin-top:18px;line-height:1.5}
+</style></head><body>
+<div class="top"><h1>📊 Weekly Dashboard</h1><a href="index.html">← Home</a></div>
+<p class="sub" id="upd">Loading…</p>
+<div class="ix" id="ix"></div>
+<div class="tools"><input id="q" type="search" placeholder="Search a share, e.g. TCS" aria-label="Search shares"><select id="sort" aria-label="Sort"><option value="chg">Best week first</option><option value="chgA">Worst week first</option><option value="az">A to Z</option></select></div>
+<div class="filters" id="fl"></div>
+<div id="list"></div>
+<p class="foot">Weekly candles: O = open, H = high, L = low, C = close. Information only, not financial advice.</p>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
+const cls=p=>p>=0.15?"up":p<=-0.15?"down":"flat";
+const sg=p=>(p>=0?"+":"")+p.toFixed(2)+"%";
+const FILTERS=[["all","All"],["mine","My stocks"],["up","Gainers"],["down","Losers"],["above","Above 10-wk avg"],["below","Below 10-wk avg"]];
+let D=null,flt="all",openSym=null;
+function calc(s){const w=s.weeks,n=w.length,l=w[n-1],p=w[n-2],k=w.slice(-10);
+ s.last=l;s.chg=(l.c-p.c)/p.c*100;s.sma=k.reduce((a,x)=>a+x.c,0)/k.length;s.above=l.c>=s.sma;
+ s.pos=l.h>l.l?(l.c-l.l)/(l.h-l.l):.5;return s}
+function candles(w){const mn=Math.min(...w.map(x=>x.l)),mx=Math.max(...w.map(x=>x.h)),r=mx-mn||1,st=200/w.length,y=v=>68-((v-mn)/r)*62;
+ return`<svg viewBox="0 0 200 74" preserveAspectRatio="none" aria-label="Weekly candles">`+w.map((x,i)=>{const c=x.c>=x.o?"var(--up)":"var(--down)",cx=i*st+st/2;
+ return`<line x1="${cx}" x2="${cx}" y1="${y(x.h)}" y2="${y(x.l)}" stroke="${c}" stroke-width="1.5"/><rect x="${cx-st*.28}" width="${st*.56}" y="${Math.min(y(x.o),y(x.c))}" height="${Math.max(1.5,Math.abs(y(x.o)-y(x.c)))}" fill="${c}"/>`}).join("")+`</svg>`}
+function prompt(s){const t=s.weeks.slice(-8).map(x=>`${x.d}: O ${x.o} H ${x.h} L ${x.l} C ${x.c}`).join("\n");
+ return`Evaluate ${s.sym} (NSE) using the MACHINE framework on the WEEKLY timeframe.\nLatest weekly candles:\n${t}\nCheck the latest quarterly results and concall guidance (say if you cannot access them). Then give: fundamentals view, valuation, weekly confirmation, exact entry zone, upside scenarios, invalidation level, position size, and hold/add/reduce/exit advice. Educational only.`}
+function copy(t,b){const done=()=>{b.textContent="Copied ✓";setTimeout(()=>b.textContent="Copy AI prompt",1800)};
+ if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>prompt_(t));else prompt_(t)}
+function prompt_(t){window.prompt("Copy this text:",t)}
+function row(s){const l=s.last,c=cls(s.chg),o=openSym===s.sym;
+ const tags=[s.above?"Above 10-week average":"Below 10-week average",s.pos>=.75?"Closed near week's high":s.pos<=.25?"Closed near week's low":"Closed mid-range"];
+ return`<div class="row${o?" open":""}" data-s="${s.sym}"><div class="hd" role="button" tabindex="0" aria-expanded="${o}"><div><div class="sym">${s.sym}${s.mine?" ⭐":""}</div><div class="px">₹${fmt(l.c)}</div></div><span class="badge ${c} ${c}">${sg(s.chg)}</span></div>
+ <div class="ohlc"><div><small>Open</small><b>${fmt(l.o)}</b></div><div><small>High</small><b>${fmt(l.h)}</b></div><div><small>Low</small><b>${fmt(l.l)}</b></div><div><small>Close</small><b>${fmt(l.c)}</b></div></div>
+ <div class="more">${candles(s.weeks)}<div class="tags">${tags.map(t=>`<span class="tag">${t}</span>`).join("")}<span class="tag">10-wk avg ₹${fmt(s.sma)}</span></div>
+ <table><tr><th>Week</th><th>O</th><th>H</th><th>L</th><th>C</th></tr>${s.weeks.slice(-8).reverse().map(x=>`<tr><td>${x.d.slice(5)}</td><td>${fmt(x.o)}</td><td>${fmt(x.h)}</td><td>${fmt(x.l)}</td><td>${fmt(x.c)}</td></tr>`).join("")}</table>
+ <div class="acts"><button class="btn cp">Copy AI prompt</button><a class="btn" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(s.sym)}">Chart</a><a class="btn" target="_blank" rel="noopener" href="https://groww.in/stocks">Open Groww</a></div></div></div>`}
+function draw(){
+ const q=$("q").value.trim().toUpperCase(),so=$("sort").value;
+ let a=D.stocks.filter(s=>(!q||s.sym.includes(q))&&(flt==="all"||(flt==="mine"&&s.mine)||(flt==="up"&&s.chg>=0.15)||(flt==="down"&&s.chg<=-0.15)||(flt==="above"&&s.above)||(flt==="below"&&!s.above)));
+ a.sort(so==="az"?(x,y)=>x.sym.localeCompare(y.sym):so==="chgA"?(x,y)=>x.chg-y.chg:(x,y)=>y.chg-x.chg);
+ $("list").innerHTML=a.length?a.map(row).join(""):`<div class="empty">No shares match. Try another filter or search.</div>`;
+ $("fl").innerHTML=FILTERS.map(f=>`<button class="f${f[0]===flt?" on":""}" data-f="${f[0]}">${f[1]}</button>`).join("")}
+async function init(){
+ try{const r=await fetch("weekly.json?t="+Date.now());if(!r.ok)throw 0;D=await r.json();D.stocks.forEach(calc);D.indices.forEach(calc)}
+ catch(e){$("upd").textContent="";$("list").innerHTML=`<div class="empty">Weekly data is not ready yet.<br>${location.protocol==="file:"||location.protocol==="content:"?"Open the online link, not the downloaded file.":"In GitHub, open Actions > \"Weekly data and Friday digest\" > Run workflow, then refresh."}</div>`;return}
+ const t=new Date(D.updated);$("upd").textContent="Weekly data updated "+t.toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})+" IST · "+D.stocks.length+" shares";
+ $("ix").innerHTML=D.indices.map(i=>`<div class="chip"><b>${i.sym} this week</b><span class="${cls(i.chg)}">${sg(i.chg)}</span></div>`).join("");
+ draw()}
+$("q").oninput=draw;$("sort").onchange=draw;
+$("fl").onclick=e=>{const b=e.target.closest("[data-f]");if(b){flt=b.dataset.f;draw()}};
+function toggle(h){const s=h.closest(".row").dataset.s;openSym=openSym===s?null:s;draw();if(openSym){const el=document.querySelector(`[data-s="${CSS.escape(s)}"]`);el&&el.scrollIntoView({block:"nearest"})}}
+$("list").onclick=e=>{const h=e.target.closest(".hd");if(h)return toggle(h);const b=e.target.closest(".cp");if(b){const s=D.stocks.find(x=>x.sym===b.closest(".row").dataset.s);copy(prompt(s),b)}};
+$("list").onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("hd")){e.preventDefault();toggle(e.target)}};
+init();
+</script></body></html>
